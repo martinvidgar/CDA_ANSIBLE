@@ -1,0 +1,71 @@
+########################################################
+# DO Community Playbooks: Moodle on Debian 10 LAMP
+#########################################################
+---
+- hosts: apachephp
+  become: true
+  vars_files:
+    - vars/default.yml
+
+  tasks:
+
+  # UFW Configuration
+    - name: "UFW - Allow HTTP on port {{ http_port }}"
+      ufw:
+       rule: allow
+       port: "{{ http_port }}"
+       proto: tcp
+      tags: [ system ]
+
+  # Moodle Configuration
+    - name: Install requirements
+      ansible.builtin.package:
+        name: "{{ moodle_requirements }}"
+        state: present
+
+    - name: Install Moodle Extensions
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: "{{ moodle_requirements }}"
+      tags: [ system ]
+
+    - name: Download and unpack latest Moodle
+      unarchive:
+        src: https://download.moodle.org/download.php/direct/stable401/moodle-latest-401.tgz
+        dest: "{{ moodle_httpd_data_directory }}"
+        creates: "{{ moodle_httpd_data_directory }}/moodle"
+        remote_src: yes
+        owner: "{{ moodle_httpd_owner }}"
+        group: "{{ moodle_httpd_group }}"
+        mode: "0755"
+      register: moodle_download_and_unpack
+      until:
+        - moodle_download_and_unpack is succeeded
+      retries: 3
+      #tags: [ moodle ]
+
+    - name: Make directory
+      file:
+        path: "{{ moodle_data_directory }}"
+        state: directory
+        owner: "{{ moodle_httpd_owner }}"
+        group: "{{ moodle_httpd_group }}"
+        mode: "{{ moodle_directory_mode }}"
+      #tags: [ moodle ]
+
+    - name: Set up moodle-config
+      template:
+        src: "files/md-config.php.j2"
+        dest: "{{ moodle_httpd_data_directory }}/moodle/config.php"
+        mode: "0640"
+      tags: [ moodle ]
+      
+  handlers:
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
