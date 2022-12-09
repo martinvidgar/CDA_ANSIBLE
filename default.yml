@@ -1,0 +1,96 @@
+#System Settings
+php_modules: [ 'php-curl', 'php-gd', 'php-mbstring', 'php-xml', 'php-xmlrpc', 'php-soap', 'php-intl', 'php-zip' ]
+
+#MySQL Settings
+mysql_root_password: "purple"
+mysql_db: "cda"
+mysql_user: "administrador_cda"
+mysql_password: "administrador_cda"
+
+#HTTP Settings
+http_host: "md_ansible"
+http_conf: "md_ansible.conf"
+http_port: "80"
+
+#Moodle Settings
+moodle_database_type: mysqli
+moodle_database_hostname: ansible
+moodle_database_name: moodle
+moodle_database_username: moodlecda
+moodle_database_password: moodlecda
+moodle_database_prefix: ""
+
+#The version of moodle to install
+moodle_version: 410
+
+#The URL where to serve content
+moodle_wwwroot: "https://{{ ansible_default_ipv4.address }}/moodle"
+
+#A path where to save the data
+moodle_data_directory: /opt/moodledata
+
+#The permissions of the created directories
+moodle_directory_mode: "0750"
+
+#vars file for moodle
+
+_moodle_requirements:
+  default:
+    - php-pear-MDB2-Driver-mysqli
+    - php-zip
+    - php-gd
+    - php-intl
+    - php-xmlrpc
+    - php-soap
+  RedHat-8:
+    - php-mysqlnd
+    - php-zip
+    - php-gd
+    - php-intl
+    - php-xmlrpc
+    - php-soap
+  Debian:
+    - php-mysqli
+    - php-zip
+    - php-gd
+    - php-intl
+    - php-xmlrpc
+    - php-soap
+    Debian-testing:
+    - php-mysql
+    - php-zip
+    - php-gd
+    - php-intl
+    - php-soap
+  Suse:
+    - php7-mysql
+    - php7-zip
+    - php7-gd
+    - php7-intl
+    - php7-xmlrpc
+    - php7-soap
+
+moodle_requirements: "{{ _moodle_requirements[ansible_os_family ~ '-' ~ ansible_distribution_major_version] | default(_moodle_requirements[ansible_os_family] | default(_moodle_requirements[$
+
+moodle_src: "https://download.moodle.org/download.php/direct/stable401/moodle-latest-401.tgz"
+
+_moodle_httpd_data_directory:
+  default: /var/www/html
+  Alpine: /var/www/{{ httpd_servername | default(ansible_fqdn) }}
+  Suse: /srv/www/htdocs
+
+moodle_httpd_data_directory: "{{ _moodle_httpd_data_directory[ansible_os_family] | default(_moodle_httpd_data_directory['default'] ) }}"
+
+_moodle_httpd_owner:
+  default: apache
+  Debian: www-data
+  Suse: wwwrun
+
+moodle_httpd_owner: "{{ _moodle_httpd_owner[ansible_os_family] | default(_moodle_httpd_owner['default'] ) }}"
+
+_moodle_httpd_group:
+  default: apache
+  Debian: www-data
+  Suse: www
+
+moodle_httpd_group: "{{ _moodle_httpd_group[ansible_os_family] | default(_moodle_httpd_group['default'] ) }}"
